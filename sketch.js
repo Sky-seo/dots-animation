@@ -28,11 +28,18 @@ new p5((p) => {
   const RINGS = 8;
   const DOTS = 13;
   const PERIOD = 3;
-  // Each ring is turned 3/5 of a dot step from the one before (measured ~0.55–0.62).
-  // A rational step makes the lattice repeat every 5 rings, so the whole field
-  // returns to exactly the same frame after LOOP seconds — a seamless loop.
-  const STEP_NUM = 3, STEP_DEN = 5;
-  const LOOP = PERIOD * STEP_DEN;
+  // Each ring is turned a fraction num/den of a dot step from the one before.
+  // A rational step makes the lattice repeat every `den` rings, so the whole
+  // field returns to exactly the same frame after den × PERIOD seconds.
+  // Without rotation the shortest staggered loop is 2 rings (half step, 6 s);
+  // 1/3 (9 s) and 3/5 (15 s) read more like the reference's spirals.
+  const STEPS = { 2: [1, 2], 3: [1, 3], 5: [3, 5] };
+  let STEP_NUM = 1, STEP_DEN = 2, LOOP = PERIOD * STEP_DEN;
+  function setLoop(rings) {
+    [STEP_NUM, STEP_DEN] = STEPS[rings];
+    LOOP = PERIOD * STEP_DEN;
+    state.time %= LOOP;
+  }
   const mod = (a, n) => ((a % n) + n) % n;
 
   const smoothstep = (a, b, x) => {
@@ -62,7 +69,11 @@ new p5((p) => {
     const offset = mod(birth * STEP_NUM, STEP_DEN) / STEP_DEN;
     const angle = (index + offset) / DOTS * TAU - Math.PI / 2;
     // Whole numbers of turns per loop and per 5 rings keep the wave loopable too.
-    if (mode === 'wave') scale = 0.72 + 0.28 * Math.cos(angle * 3 - TAU * 4 * t / LOOP + birth * TAU * 2 / STEP_DEN);
+    if (mode === 'wave') {
+      // Whole numbers of turns per loop and per `den` rings keep the wave loopable.
+      const turns = Math.max(1, Math.round(LOOP * 1.6 / TAU));
+      scale = 0.72 + 0.28 * Math.cos(angle * 3 - TAU * turns * t / LOOP + birth * TAU / STEP_DEN);
+    }
 
     const outer = unit;
     const inner = unit * (0.62 - state.spread / 100 * 0.24);
@@ -148,21 +159,24 @@ new p5((p) => {
     setMode('orbit'); transition = 1; updatePause(); renderField();
   });
   // ---- Loop video export ------------------------------------------------
-  // Frames are rendered at exact times i * LOOP / N for i = 0 … N-1, never in
-  // real time, so the clip is exactly one loop: the frame after the last one
-  // would be frame 0 again, and playback on repeat has no seam or stutter.
+  // Frames are rendered at exact times (i mod N) * LOOP / N, never in real time.
+  // Frames 0 … N-1 are exactly one loop. With "closing frame" on, frame N is
+  // appended and is pixel-identical to frame 0 (first = last).
   function exportPlan() {
     const [w, h] = $('#export-size').value.split('x').map(Number);
     const fps = Number($('#export-fps').value);
     const seconds = state.speed > 0 ? LOOP / state.speed : 0;
-    return { w, h, fps, seconds, frames: Math.round(seconds * fps) };
+    const loopFrames = Math.round(seconds * fps);
+    const frames = loopFrames && $('#export-closing').checked ? loopFrames + 1 : loopFrames;
+    return { w, h, fps, seconds, loopFrames, frames };
   }
+  const frameTime = (plan, i) => (i % plan.loopFrames) * LOOP / plan.loopFrames;
 
   function updateExportNote() {
-    const { seconds, frames } = exportPlan();
+    const { seconds, frames, loopFrames, fps } = exportPlan();
     $('#loop-length').textContent = seconds ? `${seconds.toFixed(1)} s` : '—';
     $('#export-note').textContent = seconds
-      ? `${seconds.toFixed(1)} s · ${frames} frames · one seamless loop`
+      ? `${(frames / fps).toFixed(2)} s · ${frames} frames` + (frames > loopFrames ? ' · last = first' : ' · seamless repeat')
       : 'Set speed above 0 to export.';
     $('#export').disabled = exporting || !seconds;
   }
@@ -193,7 +207,7 @@ new p5((p) => {
     encoder.configure(config);
     const frameDuration = 1e6 / fps;
     for (let i = 0; i < frames && !failure; i++) {
-      drawField(g, w, h, i * LOOP / frames, state.mode, 1);
+      drawField(g, w, h, frameTime(plan, i), state.mode, 1);
       const frame = new VideoFrame(g.elt, { timestamp: Math.round(i * frameDuration), duration: Math.round(frameDuration) });
       encoder.encode(frame, { keyFrame: i % fps === 0 });
       frame.close();
@@ -222,7 +236,7 @@ new p5((p) => {
     recorder.start();
     const start = performance.now();
     for (let i = 0; i < frames; i++) {
-      drawField(g, plan.w, plan.h, i * LOOP / frames, state.mode, 1);
+      drawField(g, plan.w, plan.h, frameTime(plan, i), state.mode, 1);
       track.requestFrame();
       progress(i / frames);
       const wait = start + (i + 1) * 1000 / fps - performance.now();
@@ -253,7 +267,7 @@ new p5((p) => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `dots-${state.mode}-${plan.w}x${plan.h}-${plan.fps}fps-loop.${ext}`;
+      link.download = `dots-${state.mode}-${plan.w}x${plan.h}-${plan.fps}fps-${plan.seconds.toFixed(1)}s-loop.${ext}`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 2000);
       $('#status').textContent = `Loop video exported (${plan.seconds.toFixed(1)} s).`;
@@ -274,6 +288,8 @@ new p5((p) => {
   $('#export').addEventListener('click', exportVideo);
   $('#export-size').addEventListener('change', updateExportNote);
   $('#export-fps').addEventListener('change', updateExportNote);
+  $('#export-closing').addEventListener('change', updateExportNote);
+  $('#loop').addEventListener('change', event => { setLoop(event.target.value); updateExportNote(); renderField(); });
 
   $('#save').addEventListener('click', () => {
     renderField();

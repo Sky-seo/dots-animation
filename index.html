@@ -22,7 +22,7 @@
     <section class="stage" aria-label="Dots animation">
       <div class="stage-top"><span>FIG. <span id="figure">01</span></span><span id="mode-label">EMANATING FIELD</span></div>
       <canvas id="canvas" aria-label="Animated white dots forming concentric rings that are born at the centre, drift outward and fade away."></canvas>
-      <div class="stage-bottom"><span>Seamless loop · <span id="loop-length">15.0 s</span></span><span id="dot-count">13 × 8 POINTS</span></div>
+      <div class="stage-bottom"><span>Seamless loop · <span id="loop-length">6.0 s</span></span><span id="dot-count">13 × 8 POINTS</span></div>
     </section>
     <aside aria-label="Animation controls">
       <div class="intro"><span class="eyebrow">MOTION STUDY / 001</span><h1>Order.<br>In motion.</h1><p>Small points. Endless rhythms.<br>A little space to experiment.</p></div>
@@ -35,8 +35,10 @@
       <div class="transport"><button id="pause" aria-label="Pause animation"><span id="play-icon" aria-hidden="true">Ⅱ</span><span id="play-label">Pause</span></button><button id="reset" class="text-button">Reset <span aria-hidden="true">↺</span></button></div>
       <button id="save" class="save-button">Save a frame <span aria-hidden="true">⊞</span></button>
       <fieldset class="export"><legend>Video export</legend>
+        <div class="export-row"><label for="loop">Loop</label><select id="loop"><option value="2" selected>6 s · shortest</option><option value="3">9 s · spiral</option><option value="5">15 s · spiral</option></select></div>
         <div class="export-row"><label for="export-size">Format</label><select id="export-size"><option value="1080x1080" selected>1080 × 1080</option><option value="1920x1080">1920 × 1080</option><option value="1080x1920">1080 × 1920</option><option value="2160x2160">2160 × 2160</option></select></div>
         <div class="export-row"><label for="export-fps">Frame rate</label><select id="export-fps"><option value="30">30 fps</option><option value="60" selected>60 fps</option></select></div>
+        <label class="export-check"><input id="export-closing" type="checkbox" checked> Closing frame (last = first)</label>
         <button id="export" class="save-button">Export loop video <span aria-hidden="true">↓</span></button>
         <p id="export-note" class="export-note"></p>
       </fieldset>
