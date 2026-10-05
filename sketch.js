@@ -7,7 +7,7 @@ new p5((p) => {
   const $ = (selector) => document.querySelector(selector);
   const TAU = Math.PI * 2;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const state = { mode: 'orbit', speed: 1, size: 3.5, spread: 50, paused: reducedMotion.matches, time: 0 };
+  const state = { mode: 'orbit', speed: 1, rotation: 1, size: 3.5, spread: 50, paused: reducedMotion.matches, time: 0 };
   let width = 0, height = 0, lastTime = null;
   let ready = false;
   let exporting = false;
@@ -24,21 +24,35 @@ new p5((p) => {
 
   // Measured from the reference: 13 dots per ring, ~8 rings visible, a new ring
   // born at the inner edge every ~3 s. Rings travel outward, decelerating, and
-  // their dots swell then shrink to nothing at the outer edge. Nothing rotates.
+  // their dots swell then shrink to nothing at the outer edge. The video also
+  // turns counter-clockwise by half a dot step per ring (~4.6°/s).
   const RINGS = 8;
   const DOTS = 13;
   const PERIOD = 3;
   // Each ring is turned a fraction num/den of a dot step from the one before.
   // A rational step makes the lattice repeat every `den` rings, so the whole
   // field returns to exactly the same frame after den × PERIOD seconds.
-  // Without rotation the shortest staggered loop is 2 rings (half step, 6 s);
-  // 1/3 (9 s) and 3/5 (15 s) read more like the reference's spirals.
+  // Rotation can cancel that stagger: if the field turns by a whole number of
+  // dot steps minus the stagger each ring period, every period looks identical,
+  // so any non-zero rotation loops in a single PERIOD (3 s) — as the video does.
   const STEPS = { 2: [1, 2], 3: [1, 3], 5: [3, 5] };
-  let STEP_NUM = 1, STEP_DEN = 2, LOOP = PERIOD * STEP_DEN;
-  function setLoop(rings) {
-    [STEP_NUM, STEP_DEN] = STEPS[rings];
-    LOOP = PERIOD * STEP_DEN;
+  let STEP_NUM = 1, STEP_DEN = 2, LOOP = PERIOD;
+  function updateLoop() {
+    LOOP = state.rotation ? PERIOD : PERIOD * STEP_DEN;
     state.time %= LOOP;
+  }
+  function setStagger(rings) {
+    [STEP_NUM, STEP_DEN] = STEPS[rings];
+    updateLoop();
+  }
+  // Rotation in dot steps per ring period. Screen y points down, so a negative
+  // angle is counter-clockwise. Level +n: CCW, -(s + n - 1). Level -n: CW, n - s.
+  // Either way stagger + rotation is a whole number of steps, so it loops.
+  function spinPerPeriod() {
+    const level = state.rotation, s = STEP_NUM / STEP_DEN;
+    if (level > 0) return -(s + level - 1);
+    if (level < 0) return -level - s;
+    return 0;
   }
   const mod = (a, n) => ((a % n) + n) % n;
 
@@ -67,12 +81,12 @@ new p5((p) => {
     }
     const u = (slot + f) / RINGS;
     const offset = mod(birth * STEP_NUM, STEP_DEN) / STEP_DEN;
-    const angle = (index + offset) / DOTS * TAU - Math.PI / 2;
-    // Whole numbers of turns per loop and per 5 rings keep the wave loopable too.
+    const angle = (index + offset + spinPerPeriod() * cycles) / DOTS * TAU - Math.PI / 2;
     if (mode === 'wave') {
-      // Whole numbers of turns per loop and per `den` rings keep the wave loopable.
+      // Depends only on screen angle, ring progress and whole turns per loop,
+      // so it repeats with the field whatever the rotation.
       const turns = Math.max(1, Math.round(LOOP * 1.6 / TAU));
-      scale = 0.72 + 0.28 * Math.cos(angle * 3 - TAU * turns * t / LOOP + birth * TAU / STEP_DEN);
+      scale = 0.72 + 0.28 * Math.cos(angle * 3 - TAU * turns * t / LOOP + u * TAU);
     }
 
     const outer = unit;
@@ -143,18 +157,24 @@ new p5((p) => {
   }
 
   document.querySelectorAll('[name=mode]').forEach(input => input.addEventListener('change', () => setMode(input.value)));
-  for (const key of ['speed', 'size', 'spread']) {
+  const formatValue = (key, value) =>
+    key === 'speed' ? `${value.toFixed(1)}×`
+    : key === 'spread' ? `${value}%`
+    : key === 'rotation' ? (value === 0 ? 'Off' : `${Math.abs(value)}× ${value > 0 ? '↺' : '↻'}`)
+    : value.toFixed(1);
+  for (const key of ['speed', 'rotation', 'size', 'spread']) {
     $(`#${key}`).addEventListener('input', event => {
       state[key] = Number(event.target.value);
-      $(`#${key}-value`).textContent = key === 'speed' ? `${state[key].toFixed(1)}×` : key === 'spread' ? `${state[key]}%` : state[key].toFixed(1);
-      if (key === 'speed') updateExportNote();
+      $(`#${key}-value`).textContent = formatValue(key, state[key]);
+      if (key === 'rotation') updateLoop();
+      if (key === 'speed' || key === 'rotation') updateExportNote();
       renderField();
     });
   }
   $('#pause').addEventListener('click', () => { state.paused = !state.paused; updatePause(); });
   $('#reset').addEventListener('click', () => {
-    Object.assign(state, { speed: 1, size: 3.5, spread: 50, time: 0, paused: reducedMotion.matches });
-    for (const key of ['speed', 'size', 'spread']) { $(`#${key}`).value = state[key]; $(`#${key}`).dispatchEvent(new Event('input')); }
+    Object.assign(state, { speed: 1, rotation: 1, size: 3.5, spread: 50, time: 0, paused: reducedMotion.matches });
+    for (const key of ['speed', 'rotation', 'size', 'spread']) { $(`#${key}`).value = state[key]; $(`#${key}`).dispatchEvent(new Event('input')); }
     $('[name=mode][value=orbit]').checked = true;
     setMode('orbit'); transition = 1; updatePause(); renderField();
   });
@@ -289,7 +309,7 @@ new p5((p) => {
   $('#export-size').addEventListener('change', updateExportNote);
   $('#export-fps').addEventListener('change', updateExportNote);
   $('#export-closing').addEventListener('change', updateExportNote);
-  $('#loop').addEventListener('change', event => { setLoop(event.target.value); updateExportNote(); renderField(); });
+  $('#stagger').addEventListener('change', event => { setStagger(event.target.value); updateExportNote(); renderField(); });
 
   $('#save').addEventListener('click', () => {
     renderField();
