@@ -7,10 +7,10 @@
   <meta name="description" content="A study of dots, rhythm, and circular motion. Inspired by Dots Animation.">
   <title>Dots — a motion study</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23090909'/%3E%3Cg fill='%23efefea'%3E%3Ccircle cx='16' cy='7' r='3'/%3E%3Ccircle cx='25' cy='16' r='3'/%3E%3Ccircle cx='16' cy='25' r='3'/%3E%3Ccircle cx='7' cy='16' r='3'/%3E%3C/g%3E%3C/svg%3E">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=6">
   <script src="vendor/p5.min.js" defer></script>
   <script src="vendor/mp4-muxer.min.js" defer></script>
-  <script src="sketch.js" defer></script>
+  <script src="sketch.js?v=6" defer></script>
 </head>
 <body>
   <header>
@@ -29,15 +29,15 @@
       <fieldset class="modes"><legend>Movement</legend><label><input type="radio" name="mode" value="orbit" checked><span>01</span> Emanate <i aria-hidden="true">◌</i></label><label><input type="radio" name="mode" value="wave"><span>02</span> Wave <i aria-hidden="true">≈</i></label><label><input type="radio" name="mode" value="pulse"><span>03</span> Pulse <i aria-hidden="true">◎</i></label></fieldset>
       <div class="parameters">
         <label for="speed">Speed <output id="speed-value" for="speed">1.0×</output></label><input id="speed" type="range" min="0" max="2" step="0.05" value="1">
-        <label for="rotation">Rotation <output id="rotation-value" for="rotation">1× ↺</output></label><input id="rotation" type="range" min="-3" max="3" step="1" value="1" aria-describedby="rotation-hint">
-        <p id="rotation-hint" class="hint">+ CCW ↺ · − CW ↻ · 1× ↺ = video</p>
+        <label for="rotation">Rotation <output id="rotation-value" for="rotation">5.5°/s ↺</output></label><input id="rotation" type="range" min="-6" max="6" step="1" value="1" aria-describedby="rotation-hint">
+        <p id="rotation-hint" class="hint">right ↺ counter-clockwise · left ↻ clockwise · one step ≈ video</p>
         <label for="size">Dot size <output id="size-value" for="size">3.5</output></label><input id="size" type="range" min="1" max="7" step="0.1" value="3.5">
         <label for="spread">Spread <output id="spread-value" for="spread">50%</output></label><input id="spread" type="range" min="0" max="100" step="1" value="50">
       </div>
       <div class="transport"><button id="pause" aria-label="Pause animation"><span id="play-icon" aria-hidden="true">Ⅱ</span><span id="play-label">Pause</span></button><button id="reset" class="text-button">Reset <span aria-hidden="true">↺</span></button></div>
       <button id="save" class="save-button">Save a frame <span aria-hidden="true">⊞</span></button>
       <fieldset class="export"><legend>Video export</legend>
-        <div class="export-row"><label for="stagger">Stagger</label><select id="stagger"><option value="2" selected>½ step · video</option><option value="3">⅓ step · spiral</option><option value="5">⅗ step · spiral</option></select></div>
+        <div class="export-row"><label for="stagger">Stagger</label><select id="stagger"><option value="5" selected>⅗ step · original</option><option value="3">⅓ step · spiral</option><option value="2">½ step · zigzag</option></select></div>
         <div class="export-row"><label for="export-size">Format</label><select id="export-size"><option value="1080x1080" selected>1080 × 1080</option><option value="1920x1080">1920 × 1080</option><option value="1080x1920">1080 × 1920</option><option value="2160x2160">2160 × 2160</option></select></div>
         <div class="export-row"><label for="export-fps">Frame rate</label><select id="export-fps"><option value="30">30 fps</option><option value="60" selected>60 fps</option></select></div>
         <label class="export-check"><input id="export-closing" type="checkbox" checked> Closing frame (last = first)</label>

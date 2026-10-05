@@ -10,8 +10,8 @@ Alternatively, run `python3 -m http.server 8001` in this folder and visit `http:
 
 - **Emanate / Wave / Pulse:** smoothly transition between three non-rotating movements.
 - **Speed / Dot size / Spread:** adjust the field in real time. Speed changes the loop length (loop ÷ speed).
-- **Rotation:** −3 … +3. Positive turns counter-clockwise, negative clockwise; +1 matches the video (~4.6°/s). Any non-zero rotation loops in 3 s; with rotation off the loop is 6–15 s depending on stagger.
-- **Stagger:** how far each new ring is turned from the previous one (½ step as in the video, or ⅓ / ⅗ for spirals).
+- **Rotation:** −6 … +6, shown in °/s. Right of centre turns counter-clockwise, left clockwise; the first step right (4.6°/s) matches the video, higher steps spin visibly faster. Any non-zero rotation loops in 3 s; with rotation off the loop is 6–15 s depending on stagger.
+- **Stagger:** how far each new ring is turned from the previous one (⅗ step is the default spiral shape; ⅓ is another spiral, ½ a zigzag).
 - **Video export:** renders exactly one loop frame by frame and downloads an H.264 MP4 (WebCodecs). With *Closing frame* on, the last frame is identical to the first; turn it off for clips that will repeat in a player, so the shared frame isn't shown twice. Browsers without WebCodecs fall back to a real-time WebM recording.
 - **Pause:** freeze the composition; Space also toggles playback when no control is focused.
 - **Save a frame:** download the current canvas as a PNG.

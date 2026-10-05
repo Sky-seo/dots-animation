@@ -36,7 +36,7 @@ new p5((p) => {
   // dot steps minus the stagger each ring period, every period looks identical,
   // so any non-zero rotation loops in a single PERIOD (3 s) — as the video does.
   const STEPS = { 2: [1, 2], 3: [1, 3], 5: [3, 5] };
-  let STEP_NUM = 1, STEP_DEN = 2, LOOP = PERIOD;
+  let STEP_NUM = 3, STEP_DEN = 5, LOOP = PERIOD;  // ⅗: the original spiral shape
   function updateLoop() {
     LOOP = state.rotation ? PERIOD : PERIOD * STEP_DEN;
     state.time %= LOOP;
@@ -160,13 +160,14 @@ new p5((p) => {
   const formatValue = (key, value) =>
     key === 'speed' ? `${value.toFixed(1)}×`
     : key === 'spread' ? `${value}%`
-    : key === 'rotation' ? (value === 0 ? 'Off' : `${Math.abs(value)}× ${value > 0 ? '↺' : '↻'}`)
+    : key === 'rotation' ? (value === 0 ? 'Off' : `${(Math.abs(spinPerPeriod()) * 360 / DOTS / PERIOD * state.speed).toFixed(1)}°/s ${value > 0 ? '↺' : '↻'}`)
     : value.toFixed(1);
   for (const key of ['speed', 'rotation', 'size', 'spread']) {
     $(`#${key}`).addEventListener('input', event => {
       state[key] = Number(event.target.value);
       $(`#${key}-value`).textContent = formatValue(key, state[key]);
       if (key === 'rotation') updateLoop();
+      if (key === 'speed') $('#rotation-value').textContent = formatValue('rotation', state.rotation);
       if (key === 'speed' || key === 'rotation') updateExportNote();
       renderField();
     });
@@ -309,7 +310,11 @@ new p5((p) => {
   $('#export-size').addEventListener('change', updateExportNote);
   $('#export-fps').addEventListener('change', updateExportNote);
   $('#export-closing').addEventListener('change', updateExportNote);
-  $('#stagger').addEventListener('change', event => { setStagger(event.target.value); updateExportNote(); renderField(); });
+  $('#stagger').addEventListener('change', event => {
+    setStagger(event.target.value);
+    $('#rotation-value').textContent = formatValue('rotation', state.rotation);
+    updateExportNote(); renderField();
+  });
 
   $('#save').addEventListener('click', () => {
     renderField();
@@ -343,5 +348,6 @@ new p5((p) => {
     resize();
     updatePause();
     updateExportNote();
+    $('#rotation-value').textContent = formatValue('rotation', state.rotation);
   };
 });
